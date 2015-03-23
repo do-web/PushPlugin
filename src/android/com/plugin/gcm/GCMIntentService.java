@@ -13,6 +13,10 @@ import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
+
 import com.google.android.gcm.GCMBaseIntentService;
 
 @SuppressLint("NewApi")
@@ -79,6 +83,18 @@ public class GCMIntentService extends GCMBaseIntentService {
         }
 	}
 
+   private Bitmap getBitmap(int resId) {
+        int mLargeIconWidth = (int) getResources().getDimension(android.R.dimen.notification_large_icon_width);
+        int mLargeIconHeight = (int) getResources().getDimension(android.R.dimen.notification_large_icon_height);
+
+        Drawable d = getResources().getDrawable(resId);
+        Bitmap b = Bitmap.createBitmap(mLargeIconWidth, mLargeIconHeight, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(b);
+        d.setBounds(0, 0, mLargeIconWidth, mLargeIconHeight);
+        d.draw(c);
+        return b;
+    }
+
 	public void createNotification(Context context, Bundle extras)
 	{
 		NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -97,11 +113,26 @@ public class GCMIntentService extends GCMBaseIntentService {
 				defaults = Integer.parseInt(extras.getString("defaults"));
 			} catch (NumberFormatException e) {}
 		}
-		
+
+		int smallIcon = 0;
+		int largeIcon = 0;
+		String packageName = context.getPackageName();
+		String smallIconName = "notification";
+		String largeIconName = "icon";
+
+		try {
+			Class<?> klass  = Class.forName(packageName + ".R$drawable");
+
+			smallIcon = (Integer) klass.getDeclaredField(smallIconName).get(Integer.class);
+			largeIcon = (Integer) klass.getDeclaredField(largeIconName).get(Integer.class);
+
+		} catch (Exception e) {}
+
 		NotificationCompat.Builder mBuilder =
 			new NotificationCompat.Builder(context)
 				.setDefaults(defaults)
-				.setSmallIcon(context.getApplicationInfo().icon)
+				.setSmallIcon(smallIcon)
+				.setLargeIcon(getBitmap(largeIcon))
 				.setWhen(System.currentTimeMillis())
 				.setContentTitle(extras.getString("title"))
 				.setTicker(extras.getString("title"))
